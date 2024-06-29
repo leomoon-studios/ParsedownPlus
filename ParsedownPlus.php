@@ -50,11 +50,16 @@ class ParsedownPlus extends ParsedownFilter
             $this->cssAdded = true;
         }
 
-        // Process custom tags outside code blocks
-        $text = $this->processCustomTagsOutsideCode($text);
+        // Process custom tags outside code blocks, except for color tags
+        $text = $this->processCustomTagsOutsideCode($text, false);
 
-        // Pass the processed text to the parent class
-        return parent::text($text);
+        // Parse the Markdown
+        $text = parent::text($text);
+
+        // Now process the color tags
+        $text = $this->processColorTags($text);
+
+        return $text;
     }
 
     protected function addCss($text)
@@ -92,26 +97,28 @@ class ParsedownPlus extends ParsedownFilter
         return $css . $text;
     }
 
-    protected function processCustomTagsOutsideCode($text)
+    protected function processCustomTagsOutsideCode($text, $includeColor = true)
     {
         $parts = preg_split(self::CODE_BLOCK_PATTERN, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
         foreach ($parts as &$part) {
             if (!preg_match(self::CODE_BLOCK_PATTERN, $part)) {
-                $part = $this->processCustomTags($part);
+                $part = $this->processCustomTags($part, $includeColor);
             }
         }
 
         return implode('', $parts);
     }
 
-    protected function processCustomTags($text)
+    protected function processCustomTags($text, $includeColor = true)
     {
-        $text = $this->processColorTags($text);
         $text = $this->processVideoTags($text);
         $text = $this->processRtlTags($text);
         $text = $this->processLtrTags($text);
         $text = $this->processMonoTags($text);
+        if ($includeColor) {
+            $text = $this->processColorTags($text);
+        }
         return $text;
     }
 
@@ -157,7 +164,12 @@ class ParsedownPlus extends ParsedownFilter
                     $color = htmlspecialchars($color);
                 }
                 $content = $matches[2];
-                return "<span style=\"color:$color;\">$content</span>";
+                // Check if the content contains block-level elements
+                if (preg_match('/<(?:p|div|h[1-6]|ul|ol|li|blockquote|pre|table|dl|address)/i', $content)) {
+                    return "<div style=\"color:$color;\">$content</div>";
+                } else {
+                    return "<span style=\"color:$color;\">$content</span>";
+                }
             },
             $text
         );
@@ -192,8 +204,8 @@ class ParsedownPlus extends ParsedownFilter
         return preg_replace_callback(
             self::MONO_TAG_PATTERN,
             function ($matches) {
-                $content = $this->text($matches[1]);
-                return "<div class=\"mono\">$content</div>";
+                $content = $matches[1];
+                return "<span class=\"mono\">$content</span>";
             },
             $text
         );
