@@ -13,6 +13,7 @@ class ParsedownPlus extends ParsedownFilter
     const RTL_TAG_PATTERN = '/\[rtl\](.*?)\[\/rtl\]/s';
     const LTR_TAG_PATTERN = '/\[ltr\](.*?)\[\/ltr\]/s';
     const MONO_TAG_PATTERN = '/\[mono\](.*?)\[\/mono\]/s';
+    const COLLAPSIBLE_SECTION_PATTERN = '/\+\+\+(.*?)\n(.*?)\n\+\+\+/s';
 
     function __construct(array $params = null)
     {
@@ -49,6 +50,9 @@ class ParsedownPlus extends ParsedownFilter
             $text = $this->addCss($text);
             $this->cssAdded = true;
         }
+
+        // Process collapsible sections
+        $text = $this->processCollapsibleSections($text);
 
         // Process custom tags outside code blocks, except for color tags
         $text = $this->processCustomTagsOutsideCode($text, false);
@@ -92,6 +96,26 @@ class ParsedownPlus extends ParsedownFilter
             }
             .mono {
                 font-family: {$this->monospaceFont};
+            }
+            details {
+                border: 1px solid #aaa;
+                border-radius: 4px;
+                padding: 0.5em 0.5em 0;
+                margin-bottom: 1.5em;
+            }
+            summary {
+                font-weight: bold;
+                margin: -0.5em -0.5em 0;
+                padding: 0.5em;
+                cursor: pointer;
+            }
+            details[open] {
+                padding: 0.5em;
+                margin-bottom: 1.5em;
+            }
+            details[open] summary {
+                border-bottom: 1px solid #aaa;
+                margin-bottom: 0.5em;
             }
         </style>\n";
         return $css . $text;
@@ -206,6 +230,25 @@ class ParsedownPlus extends ParsedownFilter
             function ($matches) {
                 $content = $matches[1];
                 return "<span class=\"mono\">$content</span>";
+            },
+            $text
+        );
+    }
+    protected function processCollapsibleSections($text)
+    {
+        return preg_replace_callback(
+            self::COLLAPSIBLE_SECTION_PATTERN,
+            function ($matches) {
+                $summary = trim($matches[1]);
+                $content = $this->text(trim($matches[2]));
+
+                if (empty($summary)) {
+                    $summary = "Click to expand";
+                } else {
+                    $summary = trim($summary, '"');
+                }
+
+                return "<details><summary>{$summary}</summary>{$content}</details>";
             },
             $text
         );
