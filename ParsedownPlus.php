@@ -76,6 +76,7 @@ class ParsedownPlus extends ParsedownFilter
                 overflow: hidden;
                 max-width: 100%;
                 background: #000;
+                margin: 1.75rem 0 1rem 0;
             }
             .video-responsive iframe {
                 position: absolute;
@@ -101,7 +102,7 @@ class ParsedownPlus extends ParsedownFilter
                 border: 1px solid #aaa;
                 border-radius: 4px;
                 padding: 0.5em 0.5em 0;
-                margin-bottom: 1.5em;
+                margin: 1.75rem 0 1rem 0;
             }
             summary {
                 font-weight: bold;
@@ -111,13 +112,13 @@ class ParsedownPlus extends ParsedownFilter
             }
             details[open] {
                 padding: 0.5em;
-                margin-bottom: 1.5em;
+                margin: 1.75rem 0 1rem 0;
             }
             details[open] summary {
                 border-bottom: 1px solid #aaa;
                 margin-bottom: 0.5em;
             }
-        </style>\n";
+            </style>\n";
         return $css . $text;
     }
 
