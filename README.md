@@ -99,6 +99,13 @@ Predefined colors: [color=customred]predefined red[/color].
 [mono]example[/mono]
 ```
 
+### Collapsible section
+```markdown
++++ Collapsible title (optional)
+This is the content for the collapsible section. If title is not defined, it will default to: `Click to expand`
++++
+```
+
 ## License
 
 ParsedownPlus is licensed under the GPLv3 License. See the `LICENSE` file for more details.
