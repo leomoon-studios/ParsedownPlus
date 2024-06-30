@@ -20,7 +20,7 @@ class ParsedownPlus extends ParsedownFilter
         parent::__construct($params);
 
         // Ensure the parent class version is compatible
-        if (version_compare(parent::version, '0.8.0-beta-1') < 0) {
+        if (version_compare(\Parsedown::version, '0.8.0-beta-1') < 0) {
             throw new Exception('ParsedownPlus requires a later version of Parsedown');
         }
 
@@ -51,14 +51,14 @@ class ParsedownPlus extends ParsedownFilter
             $this->cssAdded = true;
         }
 
-        // Process collapsible sections
-        $text = $this->processCollapsibleSections($text);
-
         // Process custom tags outside code blocks, except for color tags
         $text = $this->processCustomTagsOutsideCode($text, false);
 
         // Parse the Markdown
         $text = parent::text($text);
+
+        // Process collapsible sections
+        $text = $this->processCollapsibleSections($text);
 
         // Now process the color tags
         $text = $this->processColorTags($text);
@@ -179,25 +179,33 @@ class ParsedownPlus extends ParsedownFilter
 
     protected function processColorTags($text)
     {
-        return preg_replace_callback(
-            self::COLOR_TAG_PATTERN,
-            function ($matches) {
-                $color = $matches[1];
-                if (isset($this->predefinedColors[$color])) {
-                    $color = $this->predefinedColors[$color];
-                } else {
-                    $color = htmlspecialchars($color);
-                }
-                $content = $matches[2];
-                // Check if the content contains block-level elements
-                if (preg_match('/<(?:p|div|h[1-6]|ul|ol|li|blockquote|pre|table|dl|address)/i', $content)) {
-                    return "<div style=\"color:$color;\">$content</div>";
-                } else {
-                    return "<span style=\"color:$color;\">$content</span>";
-                }
-            },
-            $text
-        );
+        $parts = preg_split(self::CODE_BLOCK_PATTERN, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
+
+        foreach ($parts as &$part) {
+            if (!preg_match(self::CODE_BLOCK_PATTERN, $part)) {
+                $part = preg_replace_callback(
+                    self::COLOR_TAG_PATTERN,
+                    function ($matches) {
+                        $color = $matches[1];
+                        if (isset($this->predefinedColors[$color])) {
+                            $color = $this->predefinedColors[$color];
+                        } else {
+                            $color = htmlspecialchars($color);
+                        }
+                        $content = $matches[2];
+                        // Check if the content contains block-level elements
+                        if (preg_match('/<(?:p|div|h[1-6]|ul|ol|li|blockquote|pre|table|dl|address)/i', $content)) {
+                            return "<div style=\"color:$color;\">$content</div>";
+                        } else {
+                            return "<span style=\"color:$color;\">$content</span>";
+                        }
+                    },
+                    $part
+                );
+            }
+        }
+
+        return implode('', $parts);
     }
 
     protected function processRtlTags($text)
@@ -237,21 +245,29 @@ class ParsedownPlus extends ParsedownFilter
     }
     protected function processCollapsibleSections($text)
     {
-        return preg_replace_callback(
-            self::COLLAPSIBLE_SECTION_PATTERN,
-            function ($matches) {
-                $summary = trim($matches[1]);
-                $content = $this->text(trim($matches[2]));
+        $parts = preg_split(self::CODE_BLOCK_PATTERN, $text, -1, PREG_SPLIT_DELIM_CAPTURE);
 
-                if (empty($summary)) {
-                    $summary = "Click to expand";
-                } else {
-                    $summary = trim($summary, '"');
-                }
+        foreach ($parts as &$part) {
+            if (!preg_match(self::CODE_BLOCK_PATTERN, $part)) {
+                $part = preg_replace_callback(
+                    self::COLLAPSIBLE_SECTION_PATTERN,
+                    function ($matches) {
+                        $summary = trim($matches[1]);
+                        $content = $this->text(trim($matches[2]));
 
-                return "<details><summary>{$summary}</summary>{$content}</details>";
-            },
-            $text
-        );
+                        if (empty($summary)) {
+                            $summary = "Click to expand";
+                        } else {
+                            $summary = trim($summary, '"');
+                        }
+
+                        return "<details><summary>{$summary}</summary>{$content}</details>";
+                    },
+                    $part
+                );
+            }
+        }
+
+        return implode('', $parts);
     }
 }
