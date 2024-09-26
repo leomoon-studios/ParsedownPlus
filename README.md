@@ -75,6 +75,25 @@ return [
 [video src="https://vimeo.com/423640994"]
 ```
 
+### Caution Important Warning Tip Question Quotes
+
+```
+> [!CAUTION] Caution header
+> Caution text...
+
+> [!IMPORTANT] Important header
+> Important text...
+
+> [!WARNING] Warning header
+> Warning text...
+
+> [!TIP] Tip header
+> Tip text...
+
+> [!QUESTION] Question header
+> Question text...
+```
+
 ### Colored Text
 
 ```markdown
